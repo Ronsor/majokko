@@ -201,7 +201,6 @@ func main() {
 	n := 0
 	for i := 0; i < maxArg; i++ {
 		wg.Add(1)
-		n++
 
 		go func(i int) {
 			defer wg.Done()
@@ -230,6 +229,7 @@ func main() {
 	}
 
 	wg.Wait()
+
 	if hasError {
 		os.Exit(1)
 	}
