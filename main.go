@@ -70,7 +70,7 @@ func processFilterArgs(wand *henshin.Wand, fa *FilterArgs) {
 
 	if fa.AddComments != nil {
 		for _, c := range fa.AddComments {
-			wand.AddComment(c)
+			wand.AddComment(wand.FormatString(c))
 		}
 	}
 

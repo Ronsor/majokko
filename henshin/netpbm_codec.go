@@ -40,9 +40,7 @@ func (c *NetPBMCodec) Magic() []string {
 func (c *NetPBMCodec) Decode(r io.Reader, d *DecodeOptions) (image.Image, error) {
 	if d == nil { d = DefaultDecodeOptions() }
 
-	netpbmOpt := &netpbm.DecodeOptions{
-		Target: c.Format,
-	}
+	netpbmOpt := &netpbm.DecodeOptions{}
 
 	img, cm, err := netpbm.DecodeWithComments(r, netpbmOpt)
 	if err != nil { return img, err }
