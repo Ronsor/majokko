@@ -26,6 +26,8 @@ var (
 	identifyFormatString = "%wx%h, hash: %H, comment: %c"
 
 	filterArgs FilterArgs
+
+	groupParamOpen, groupParamClose *int
 )
 
 // FilterArgs is a set of filtering arguments.
@@ -50,20 +52,69 @@ func init() {
 
 	getopt.FlagLong(&identifyFormatString, "identify-format", 0, "Format string for --identify output")
 
-	getopt.FlagLong(&filterArgs.Strip, "strip", 'S', "Strip metadata from image")
-	getopt.FlagLong(&filterArgs.AddComments, "comment", 'C', "Add comment to image metadata")
-	getopt.FlagLong(&filterArgs.SetComments, "set-comment", 0, "Set comments for image metadata")
-	getopt.FlagLong(&filterArgs.Crop, "crop", 'c', "Crop image")
-	getopt.FlagLong(&filterArgs.Resize, "resize", 'r', "Resize image")
-	getopt.FlagLong(&filterArgs.CompressionLevel, "compress", 0, "Compression level, if applicable (0-100)")
-	filterArgs.CompressionLevel = -1 // Set to default
+	groupParamOpen = getopt.CounterLong("group", '(', "Open filter parameter group")
+	groupParamClose = getopt.CounterLong("end-group", ')', "Close filter parameter group")
+
+	initFilterArgs(&filterArgs, getopt.CommandLine)
 
 	getopt.SetParameters("[images ...] [output path]")
 }
 
-func processFilterArgs(wand *henshin.Wand, fa *FilterArgs) {
-	wand.ForceRGBA()
+func initFilterArgs(filterArgs *FilterArgs, optSet *getopt.Set) {
+	optSet.FlagLong(&filterArgs.Strip, "strip", 'S', "Strip metadata from image")
+	optSet.FlagLong(&filterArgs.AddComments, "comment", 'C', "Add comment to image metadata")
+	optSet.FlagLong(&filterArgs.SetComments, "set-comment", 0, "Set comments for image metadata")
+	optSet.FlagLong(&filterArgs.Crop, "crop", 'c', "Crop image")
+	optSet.FlagLong(&filterArgs.Resize, "resize", 'r', "Resize image")
+	optSet.FlagLong(&filterArgs.CompressionLevel, "compress", 0, "Compression level, if applicable (0-100)")
+	filterArgs.CompressionLevel = -1 // Set to default
+}
 
+func parseFilterArgs(args []string) (ret []*FilterArgs) {
+	groupStartIdx := -1
+	groupEndIdx := -1
+	groupCount := 1
+
+	for i, arg := range args {
+		if arg == "--group" || arg == "-(" {
+			groupStartIdx = i
+		} else if arg == "--end-group" || arg == "-)" {
+			groupEndIdx = i
+		}
+		if groupStartIdx != -1 && groupEndIdx != -1 {
+			if (groupEndIdx - groupStartIdx) == -1 {
+				groupStartIdx = -1
+				groupEndIdx = -1
+				groupCount++
+				continue
+			}
+
+			optSet := getopt.New()
+			filterArgs := &FilterArgs{}
+			initFilterArgs(filterArgs, optSet)
+
+			section := args[groupStartIdx:groupEndIdx]
+			err := optSet.Getopt(section, nil)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Filter group %d: %v\n", groupCount, err)
+				optSet.SetProgram("majokko -(")
+				optSet.SetParameters("-)")
+				optSet.PrintUsage(os.Stderr)
+				os.Exit(1)
+			}
+
+			ret = append(ret, filterArgs)
+
+			groupStartIdx = -1
+			groupEndIdx = -1
+			groupCount++
+		}
+	}
+
+	return
+}
+
+func processFilterArgs(wand *henshin.Wand, fa *FilterArgs) {
 	if fa.Strip {
 		wand.Strip()
 	}
@@ -134,7 +185,16 @@ func actionConvert(wand *henshin.Wand, logPrefix string, maxArg int, args []stri
 		outFile = filepath.Join(outFile, filepath.Base(inFile))
 	}
 
-	processFilterArgs(wand, &filterArgs)
+	wand.ForceRGBA()
+
+	faGroups := parseFilterArgs(os.Args)
+	if faGroups == nil {
+		processFilterArgs(wand, &filterArgs)
+	} else {
+		for _, fa := range faGroups {
+			processFilterArgs(wand, fa)
+		}
+	}
 
 	err := wand.WriteImage(outFile)
 	if err != nil {
@@ -187,6 +247,12 @@ func main() {
 				name)
 		}
 		return
+	}
+
+	if *groupParamOpen != *groupParamClose {
+		fmt.Fprintln(os.Stderr, "Unbalanced filter groups.")
+		getopt.Usage()
+		os.Exit(1)
 	}
 
 	if !doConvert {

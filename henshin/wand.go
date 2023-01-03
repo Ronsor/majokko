@@ -240,6 +240,7 @@ func (w *Wand) property(key string) (val string) {
 				val = w.md.Comments[0]
 			}
 		case "%": val = "%"
+		case ";": val = ","
 	}
 	if val == "" {
 		if strings.HasPrefix(key, "C:") || strings.HasPrefix(key, "comment:") {

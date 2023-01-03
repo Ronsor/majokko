@@ -32,6 +32,13 @@ type CodecWithAliases interface {
 	Aliases() []string
 }
 
+// CodecWithParamParser is an image codec that allows getting
+// codec-specific parameters from a string.
+type CodecWithParamParser interface {
+	Codec
+	ParseParams(opt string) (any, error)
+}
+
 // Decoder is an image codec that can decode.
 type Decoder interface {
 	Codec

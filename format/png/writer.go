@@ -57,6 +57,7 @@ type encoder struct {
 	zs      *zstd.Encoder
 	zsLevel zstd.EncoderLevel
 	bw      *bufio.Writer
+	useZstd bool
 }
 
 // CompressionLevel indicates the compression level.
@@ -203,7 +204,7 @@ func (e *encoder) writePLTEAndTRNS(p color.Palette) {
 // This method should only be called from writeIDATs (via writeImage).
 // No other code should treat an encoder as an io.Writer.
 func (e *encoder) Write(b []byte) (int, error) {
-	if e.enc.UseZstd {
+	if e.useZstd {
 		e.writeChunk(b, "ZDAT")
 	} else {
 		e.writeChunk(b, "IDAT")
@@ -316,7 +317,7 @@ func zeroMemory(v []uint8) {
 func (e *encoder) writeImage(w io.Writer, m image.Image, cb int, level int) error {
 	var cw io.Writer
 
-	if !e.enc.UseZstd {
+	if !e.useZstd {
 		if e.zw == nil || e.zwLevel != level {
 			zw, err := zlib.NewWriterLevel(w, level)
 			if err != nil {
@@ -561,7 +562,7 @@ func (e *encoder) writeIDATorZDATs() {
 	} else {
 		e.bw.Reset(e)
 	}
-	if e.enc.UseZstd {
+	if e.useZstd {
 		e.err = e.writeImage(e.bw, e.m, e.cb, levelToZstd(e.enc.CompressionLevel))
 	} else {
 		e.err = e.writeImage(e.bw, e.m, e.cb, levelToZlib(e.enc.CompressionLevel))
@@ -623,6 +624,10 @@ type Chunk struct {
 type EncodeOptions struct {
 	// CustomChunks specifies custom chunks to include in the PNG file.
 	CustomChunks []Chunk
+
+	// FallbackImage specifies a fallback image when Zstd compression is
+	// used.
+	FallbackImage image.Image
 }
 
 // Encode writes the Image m to w in PNG format. Any Image may be
@@ -662,6 +667,7 @@ func (enc *Encoder) EncodeWithOptions(w io.Writer, m image.Image, o *EncodeOptio
 	}
 
 	e.enc = enc
+	e.useZstd = enc.UseZstd
 	e.w = w
 	e.m = m
 
@@ -712,6 +718,11 @@ func (enc *Encoder) EncodeWithOptions(w io.Writer, m image.Image, o *EncodeOptio
 		e.writePLTEAndTRNS(pal)
 	}
 	e.writeIDATorZDATs()
+	if o.FallbackImage != nil && enc.UseZstd {
+		e.useZstd = false
+		e.m = o.FallbackImage
+		e.writeIDATorZDATs()
+	}
 	for _, c := range o.CustomChunks {
 		if c.AfterIDAT {
 			e.writeChunk(c.Data, c.Name)
