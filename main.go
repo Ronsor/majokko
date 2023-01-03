@@ -120,12 +120,14 @@ func actionConvert(wand *henshin.Wand, logPrefix string, maxArg int, args []stri
 	}
 }
 
-func actionVersion() {
+func actionVersion(full bool) {
 	fmt.Printf("Majokko %s (C) 2022-2023 Ronsor Labs. Licensed under the MIT license.\n", VERSION)
 	fmt.Printf("Supported formats:")
 	for _, c := range henshin.Codecs() {
 		fmt.Printf(" %s", c.Name())
 	}
+
+	if !full { fmt.Println(""); return }
 	fmt.Printf("\nFor more information, use the --list-formats option.\n")
 }
 
@@ -134,12 +136,14 @@ func main() {
 	args := getopt.Args()
 
 	if doHelp {
+		actionVersion(false)
+		fmt.Println("")
 		getopt.Usage()
 		return
 	}
 
 	if doVersion {
-		actionVersion()
+		actionVersion(true)
 		if !doListFormats { return }
 	}
 
