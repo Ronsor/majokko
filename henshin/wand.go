@@ -141,6 +141,16 @@ func (w *Wand) Resize(iw, ih int, strategy ResizeStrategy) {
 		return
 	}
 
+	if iw == -1 {
+		ratio := float64(w.Width() / w.Height())
+		iw = int(float64(ih) * ratio)
+	} else if ih == -1 {
+		ratio := float64(w.Height() / w.Width())
+		ih = int(float64(iw) * ratio)
+	}
+
+	if iw < 0 || ih < 0 { return }
+
 	strategy.Scale(newIm, newIm.Bounds(), w.im, w.im.Bounds(), draw.Over, nil)
 	w.im = newIm
 }
