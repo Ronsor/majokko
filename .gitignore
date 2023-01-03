@@ -1,4 +1,9 @@
+dist/
 majokko
 test.png
 test.zng
 test.jpg
+test.ppm
+test.bmp
+test.tif
+test.tga
