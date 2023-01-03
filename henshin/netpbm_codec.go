@@ -24,7 +24,9 @@ type NetPBMCodec struct {
 }
 
 // New returns a new instance of NetPBMCodec.
-func (c *NetPBMCodec) New() Codec { return &NetPBMCodec{} }
+func (c *NetPBMCodec) New() Codec {
+	return &NetPBMCodec{Format: c.Format}
+}
 
 // Name returns the name of the NetPBM codec: "netpbm"
 func (c *NetPBMCodec) Name() string { return strings.ToLower(c.Format.String()) }
