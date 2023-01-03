@@ -1,7 +1,8 @@
 # format/png
 
 This version of `image/png` has been modified to support reading and writing
-custom chunks (e.g. `tEXt` data).
+custom chunks (e.g. `tEXt` data). It also supports optional Zstd compression
+for image data.
 
 ## License and Copyright Notice
 
