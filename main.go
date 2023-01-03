@@ -78,7 +78,18 @@ func processFilterArgs(wand *henshin.Wand, fa *FilterArgs) {
 		wand.SetComments(fa.SetComments)
 	}
 
-	// TODO: crop
+	if fa.Crop != "" {
+		var (
+			w = -1
+			h = -1
+			xoff = 0
+			yoff = 0
+		)
+		n, _ := fmt.Sscanf(fa.Crop, "%dx%d+%d+%d", &w, &h, &xoff, &yoff)
+		if n > 0 {
+			wand.Crop(w, h, xoff, yoff)
+		}
+	}
 
 	if fa.Resize != "" {
 		if fa.Resize[0] == '@' {

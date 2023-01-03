@@ -162,6 +162,8 @@ func (w *Wand) ResizeMaxArea(area int, strategy ResizeStrategy) {
 }
 
 func (w *Wand) Crop(iw, ih, xoff, yoff int) {
+	if iw == -1 { iw = w.Width() }
+	if ih == -1 { ih = w.Height() }
 	if w.Width() == iw && w.Height() == ih && xoff == 0 && yoff == 0 { return }
 
 	newIm := image.NewRGBA(image.Rect(0, 0, iw, ih))
