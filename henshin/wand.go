@@ -135,19 +135,20 @@ func (w *Wand) Height() int {
 func (w *Wand) Resize(iw, ih int, strategy ResizeStrategy) {
 	if w.Width() == iw && w.Height() == ih { return }
 
-	newIm := image.NewRGBA(image.Rect(0, 0, iw, ih))
 	if (w.Width() == 0 && w.Height() == 0) || (iw == 0 && ih == 0) {
-		w.im = newIm
+		w.im = image.NewRGBA(image.Rect(0, 0, iw, ih))
 		return
 	}
 
 	if iw == -1 {
-		ratio := float64(w.Width() / w.Height())
+		ratio := float64(w.Width()) / float64(w.Height())
 		iw = int(float64(ih) * ratio)
 	} else if ih == -1 {
-		ratio := float64(w.Height() / w.Width())
+		ratio := float64(w.Height()) / float64(w.Width())
 		ih = int(float64(iw) * ratio)
 	}
+
+	newIm := image.NewRGBA(image.Rect(0, 0, iw, ih))
 
 	if iw < 0 || ih < 0 { return }
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"sync"
 
 	"github.com/pborman/getopt/v2"
@@ -83,10 +82,23 @@ func processFilterArgs(wand *henshin.Wand, fa *FilterArgs) {
 
 	if fa.Resize != "" {
 		if fa.Resize[0] == '@' {
-			area, err := strconv.ParseInt(fa.Resize[1:], 10, 32)
-			if err == nil {
+			var area int
+			n, err := fmt.Sscanf(fa.Resize, "@%d", &area)
+			if n == 1 && err == nil {
 				wand.ResizeMaxArea(int(area), henshin.BiLinearStrategy)
 			}
+		} else if fa.Resize[0] == 'x' {
+			var h int
+			n, err := fmt.Sscanf(fa.Resize, "x%d", &h)
+			if n == 1 && err == nil {
+				wand.Resize(-1, h, henshin.BiLinearStrategy)
+			}
+		} else if fa.Resize[len(fa.Resize)-1] == 'x' {
+			var w int
+			n, err := fmt.Sscanf(fa.Resize, "%dx", &w)
+			if n == 1 && err == nil {
+				wand.Resize(w, -1, henshin.BiLinearStrategy)
+			}			
 		} else {
 			var w, h int
 			n, err := fmt.Sscanf(fa.Resize, "%dx%d", &w, &h)
