@@ -222,6 +222,19 @@ func (w *Wand) property(key string) (val string) {
 		case "H", "hash": val = strconv.FormatInt(int64(w.Hash()), 10)
 		case "J", "json":
 			val = `{"width":` + strconv.Itoa(w.Width()) + `,"height":` + strconv.Itoa(w.Height()) + `,"hash":` + strconv.FormatInt(int64(w.Hash()), 10) + `}`
+		case "c", "comment":
+			if len(w.md.Comments) > 0 {
+				val = w.md.Comments[0]
+			}
+	}
+	if val == "" {
+		if strings.HasPrefix(key, "C:") || strings.HasPrefix(key, "comment:") {
+			idxStr := string(key[strings.IndexByte(key, ':')+1])
+			idx, err := strconv.ParseInt(idxStr, 10, 16)
+			if err == nil && int(idx) < len(w.md.Comments) {
+				val = w.md.Comments[idx]
+			}
+		}
 	}
 	return
 }

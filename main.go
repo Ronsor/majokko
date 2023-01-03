@@ -23,7 +23,7 @@ var (
 	maxWorkers int = 1
 	noOutputFileNames = false
 
-	identifyFormatString = "%wx%h, hash: %[hash]"
+	identifyFormatString = "%wx%h, hash: %H, comment: %c"
 
 	filterArgs FilterArgs
 )
