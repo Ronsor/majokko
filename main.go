@@ -17,6 +17,7 @@ var hasError = false
 
 var (
 	doHelp = false
+	doVersion = false
 	doIdentify = false
 	doConvert = false
 	doListFormats = false
@@ -41,6 +42,7 @@ type FilterArgs struct {
 
 func init() {
 	getopt.FlagLong(&doHelp, "help", 'h', "Show this help information")
+	getopt.FlagLong(&doVersion, "version", 'v', "Show version information")
 	getopt.FlagLong(&doIdentify, "identify", 0, "Print information about the image").SetGroup("action")
 	getopt.FlagLong(&doConvert, "convert", 0, "Convert or process image (default)").SetGroup("action")
 	getopt.FlagLong(&doListFormats, "list-formats", 0, "List supported image formats").SetGroup("action")
@@ -118,6 +120,15 @@ func actionConvert(wand *henshin.Wand, logPrefix string, maxArg int, args []stri
 	}
 }
 
+func actionVersion() {
+	fmt.Printf("Majokko %s (C) 2022-2023 Ronsor Labs. Licensed under the MIT license.\n", VERSION)
+	fmt.Printf("Supported formats:")
+	for _, c := range henshin.Codecs() {
+		fmt.Printf(" %s", c.Name())
+	}
+	fmt.Printf("\nFor more information, use the --list-formats option.\n")
+}
+
 func main() {
 	getopt.Parse()
 	args := getopt.Args()
@@ -127,12 +138,10 @@ func main() {
 		return
 	}
 
-	if !doConvert {
-		doConvert = !doIdentify
+	if doVersion {
+		actionVersion()
+		if !doListFormats { return }
 	}
-
-	maxArg := len(args)
-	if doConvert { maxArg = maxArg - 1 }
 
 	if doListFormats {
 		fmt.Println("+---- Can decode?")
@@ -152,6 +161,13 @@ func main() {
 		}
 		return
 	}
+
+	if !doConvert {
+		doConvert = !doIdentify
+	}
+
+	maxArg := len(args)
+	if doConvert { maxArg = maxArg - 1 }
 
 	var wg sync.WaitGroup
 

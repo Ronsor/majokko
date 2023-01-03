@@ -31,7 +31,7 @@ D--  WEBP
 
 ## License and Copyright Notice
 
-Copyright &copy; 2022-2023 Ronsor Labs.
+Copyright &copy; 2022-2023 Ronsor Labs
 
 This software is provided to you under the terms of the MIT license.
 See the included `LICENSE` file for more information.
