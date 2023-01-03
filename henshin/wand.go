@@ -156,7 +156,7 @@ func (w *Wand) Resize(iw, ih int, strategy ResizeStrategy) {
 	w.im = newIm
 }
 
-func (w *Wand) ResizeMaxArea(area int, strategy ResizeStrategy) {
+func (w *Wand) ResizeArea(area int, strategy ResizeStrategy) {
 	iw, ih := areaFit(w.Width(), w.Height(), area)
 	w.Resize(iw, ih, strategy)
 }

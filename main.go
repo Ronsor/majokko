@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/pborman/getopt/v2"
@@ -143,31 +144,94 @@ func processFilterArgs(wand *henshin.Wand, fa *FilterArgs) {
 	}
 
 	if fa.Resize != "" {
-		if fa.Resize[0] == '@' {
-			var area int
-			n, err := fmt.Sscanf(fa.Resize, "@%d", &area)
-			if n == 1 && err == nil {
-				wand.ResizeMaxArea(int(area), henshin.BiLinearStrategy)
+		resizeOpt := fa.Resize
+		shrinkLarger := resizeOpt[len(resizeOpt)-1] == '>'
+		enlargeSmaller := resizeOpt[len(resizeOpt)-1] == '<'
+		if (shrinkLarger || enlargeSmaller) && len(resizeOpt) > 1 {
+			resizeOpt = resizeOpt[:len(resizeOpt)-1]
+		}
+
+		percentScaling := strings.ContainsRune(resizeOpt, '%')
+		if percentScaling {
+			resizeOpt = strings.ReplaceAll(resizeOpt, "%", "")
+			// Special case
+			if strings.ContainsRune("0123456789", rune(resizeOpt[0])) && !strings.ContainsRune(resizeOpt, 'x') {
+				// Ensure things like `-resize 50%` work
+				resizeOpt = resizeOpt + "x"
 			}
-		} else if fa.Resize[0] == 'x' {
-			var h int
-			n, err := fmt.Sscanf(fa.Resize, "x%d", &h)
+		}
+
+		if resizeOpt[0] == '@' {
+			var area int
+			n, err := fmt.Sscanf(resizeOpt, "@%d", &area)
 			if n == 1 && err == nil {
+				currentArea := wand.Width() * wand.Height()
+				if currentArea < area && shrinkLarger {
+					goto SKIP
+				} else if currentArea > area && enlargeSmaller {
+					goto SKIP
+				}
+
+				wand.ResizeArea(int(area), henshin.BiLinearStrategy)
+			}
+		} else if resizeOpt[0] == 'x' {
+			var h int
+			n, err := fmt.Sscanf(resizeOpt, "x%d", &h)
+
+			if n == 1 && err == nil {
+				if percentScaling && h != 0 {
+					h = int((float64(h) / 100) * float64(wand.Height()))
+				}
+
+				if wand.Height() < h && shrinkLarger {
+					goto SKIP
+				} else if wand.Height() > h && enlargeSmaller {
+					goto SKIP
+				}
+
 				wand.Resize(-1, h, henshin.BiLinearStrategy)
 			}
-		} else if fa.Resize[len(fa.Resize)-1] == 'x' {
+		} else if resizeOpt[len(resizeOpt)-1] == 'x' {
 			var w int
-			n, err := fmt.Sscanf(fa.Resize, "%dx", &w)
+			n, err := fmt.Sscanf(resizeOpt, "%dx", &w)
+
 			if n == 1 && err == nil {
+				if percentScaling && w != 0 {
+					w = int((float64(w) / 100) * float64(wand.Width()))
+				}
+
+				if wand.Width() < w && shrinkLarger {
+					goto SKIP
+				} else if wand.Width() > w && enlargeSmaller {
+					goto SKIP
+				}
+
 				wand.Resize(w, -1, henshin.BiLinearStrategy)
 			}			
 		} else {
 			var w, h int
-			n, err := fmt.Sscanf(fa.Resize, "%dx%d", &w, &h)
+			n, err := fmt.Sscanf(resizeOpt, "%dx%d", &w, &h)
 			if n == 2 && err == nil {
+				if percentScaling && w != 0 {
+					w = int((float64(w) / 100) * float64(wand.Width()))
+				}
+				if percentScaling && h != 0 {
+					h = int((float64(h) / 100) * float64(wand.Height()))
+				}
+
+				area := w * h
+				currentArea := wand.Width() * wand.Height()
+				if currentArea < area && shrinkLarger {
+					goto SKIP
+				} else if currentArea > area && enlargeSmaller {
+					goto SKIP
+				}
+
 				wand.Resize(w, h, henshin.BiLinearStrategy)
 			}
 		}
+
+		SKIP:
 	}
 
 	if fa.CompressionLevel != -1 {
